@@ -1,0 +1,55 @@
+services:
+  sql1:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlnode1
+    hostname: sqlnode1
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong!Password
+    ports:
+      - "1401:1433"
+    volumes:
+      - sql1_data:/var/opt/mssql
+      - ./certs:/certs
+      - ./init-primary.sh:/usr/src/app/init-primary.sh
+      - ./create-ag.sql:/usr/src/app/create-ag.sql
+    command: /bin/bash /usr/src/app/init-primary.sh
+    networks:
+      - sql_ag_net
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "YourStrong!Password", "-Q", "SELECT 1;"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  sql2:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlnode2
+    hostname: sqlnode2
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong!Password
+    ports:
+      - "1402:1433"
+    volumes:
+      - sql2_data:/var/opt/mssql
+      - ./certs:/certs
+      - ./init-secondary.sh:/usr/src/app/init-secondary.sh
+    command: /bin/bash /usr/src/app/init-secondary.sh
+    networks:
+      - sql_ag_net
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "YourStrong!Password", "-Q", "SELECT 1;"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+networks:
+  sql_ag_net:
+    driver: bridge
+
+volumes:
+  sql1_data:
+  sql2_data:
